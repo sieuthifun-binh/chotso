@@ -2,77 +2,65 @@ import streamlit as st
 import pandas as pd
 import io
 
-# 1. Cấu hình giao diện
-st.set_page_config(page_title="Hệ thống Chốt Sổ BHXH", layout="wide")
-st.title("📂 Hệ thống Chốt Sổ: Trích xuất Dữ liệu Thông minh")
-st.markdown("---")
+st.set_page_config(page_title="Chốt Sổ Batch Processor", layout="wide")
+st.title("🚀 Hệ thống Chốt Sổ: Quét toàn bộ file")
 
-# 2. Upload file
-uploaded_file = st.file_uploader("Tải file Excel dữ liệu (Hỗ trợ .xls, .xlsx, .csv):", type=["xls", "xlsx", "csv"])
+uploaded_file = st.file_uploader("Tải file Excel/CSV:", type=["xls", "xlsx", "csv"])
 
-# Hàm chuyển đổi định dạng 06/2012 -> 201206
+# Hàm chuẩn hóa tháng/năm
 def format_date(val):
     try:
         val = str(val).strip()
         month, year = val.split('/')
         return f"{year}{month.zfill(2)}"
-    except:
-        return val
+    except: return val
 
 if uploaded_file:
     try:
-        # 3. Đọc dữ liệu
+        # Đọc dữ liệu
         if uploaded_file.name.endswith('.csv'):
-            df = pd.read_excel(uploaded_file, header=3) # Nếu csv cần chuyển đổi dạng bảng
+            df = pd.read_excel(uploaded_file, header=3)
         else:
             df = pd.read_excel(uploaded_file, header=3)
-        
-        # Làm sạch tên cột
+            
         df.columns = [str(c).strip() for c in df.columns]
-        
-        # Lấy Mã số BHXH từ dòng 2 (index 2)
-        meta = pd.read_excel(uploaded_file, header=None)
+        meta = pd.read_excel(uploaded_file, header=None) if not uploaded_file.name.endswith('.csv') else pd.read_csv(uploaded_file, header=None)
         bhxh_val = meta.iloc[2, 1] 
 
-        # 4. Nhập từ khóa
-        tu_khoa = st.text_input("Nhập Mã đơn vị (Từ khóa) để quét:")
+        # Ô nhập từ khóa (có thể nhập nhiều, phân tách bằng dấu phẩy)
+        tu_khoa = st.text_input("Nhập Mã đơn vị (Từ khóa) - Để trống để quét toàn bộ file:")
 
-        if st.button("Xử lý và Xuất kết quả"):
-            # Lọc dữ liệu theo Mã đơn vị
-            filtered = df[df['Mã đơn vị'].astype(str).str.strip() == tu_khoa.strip()]
-            
-            if not filtered.empty:
-                # Trích xuất
-                tu_thang = format_date(filtered['Từ tháng'].iloc[0])
-                den_thang = format_date(filtered['Đến tháng'].iloc[-1])
+        if st.button("Quét toàn bộ dữ liệu"):
+            # Lọc dữ liệu: Nếu để trống thì lấy tất cả, nếu có từ khóa thì lọc theo mã
+            # .str.upper() giúp không phân biệt hoa thường
+            data_to_process = df.copy()
+            if tu_khoa:
+                list_tu_khoa = [k.strip().upper() for k in tu_khoa.split(',')]
+                data_to_process = data_to_process[data_to_process['Mã đơn vị'].astype(str).str.upper().isin(list_tu_khoa)]
+
+            if not data_to_process.empty:
+                # GroupBy để xử lý hàng loạt: nhặt dòng đầu và cuối của mỗi mã
+                results = []
+                for ma_dv, group in data_to_process.groupby('Mã đơn vị'):
+                    results.append({
+                        "MA_SO_BHXH": bhxh_val,
+                        "MA_DON_VI": ma_dv,
+                        "TU_THANG": format_date(group['Từ tháng'].iloc[0]),
+                        "DEN_THANG": format_date(group['Đến tháng'].iloc[-1])
+                    })
                 
-                # Tạo bảng kết quả
-                result_df = pd.DataFrame([{
-                    "STT": 1,
-                    "MA_SO_BHXH": bhxh_val,
-                    "MA_DON_VI": tu_khoa,
-                    "TU_THANG": tu_thang,
-                    "DEN_THANG": den_thang
-                }])
+                final_df = pd.DataFrame(results)
+                final_df.insert(0, 'STT', range(1, len(final_df) + 1))
                 
-                # Hiển thị
-                st.success("✅ Trích xuất thành công!")
-                st.table(result_df)
+                st.success(f"✅ Đã tìm thấy {len(final_df)} mã đơn vị!")
+                st.dataframe(final_df)
                 
-                # Export file
+                # Export
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                    result_df.to_excel(writer, index=False, sheet_name='KetQua')
-                
-                st.download_button(
-                    label="📥 Tải file kết quả .xlsx",
-                    data=output.getvalue(),
-                    file_name="Ket_qua_Chot_so.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
+                    final_df.to_excel(writer, index=False)
+                st.download_button("📥 Tải kết quả hàng loạt", output.getvalue(), "Ket_qua_hang_loat.xlsx")
             else:
-                st.error("Không tìm thấy mã đơn vị này. Vui lòng kiểm tra lại từ khóa!")
-                
+                st.warning("Không tìm thấy dữ liệu phù hợp.")
     except Exception as e:
-        st.error(f"Đã xảy ra lỗi kỹ thuật: {e}")
-        st.info("Lời khuyên: Hãy kiểm tra file Excel xem cột 'Mã đơn vị', 'Từ tháng', 'Đến tháng' đã đúng tên chưa.")
+        st.error(f"Lỗi hệ thống: {e}")

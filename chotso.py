@@ -2,65 +2,61 @@ import streamlit as st
 import pandas as pd
 import io
 
-st.set_page_config(page_title="Chốt Sổ Batch Processor", layout="wide")
-st.title("🚀 Hệ thống Chốt Sổ: Quét toàn bộ file")
-
-uploaded_file = st.file_uploader("Tải file Excel/CSV:", type=["xls", "xlsx", "csv"])
-
-# Hàm chuẩn hóa tháng/năm
-def format_date(val):
-    try:
-        val = str(val).strip()
-        month, year = val.split('/')
-        return f"{year}{month.zfill(2)}"
-    except: return val
-
-if uploaded_file:
-    try:
-        # Đọc dữ liệu
-        if uploaded_file.name.endswith('.csv'):
-            df = pd.read_excel(uploaded_file, header=3)
-        else:
-            df = pd.read_excel(uploaded_file, header=3)
+# Tối ưu hóa: Dùng thư viện nhanh nhất để đọc file
+def process_data(file_input, target_code):
+    # Đọc file bỏ qua header rác
+    df = pd.read_excel(file_input, header=None)
+    
+    # Tìm tọa độ các dòng bắt đầu vùng (nơi có 'Mã số BHXH')
+    # Giả sử từ khóa này nằm ở cột 0 (cột A)
+    anchor_indices = df[df[0].astype(str).str.contains("Mã số BHXH", na=False)].index.tolist()
+    
+    results = []
+    
+    for i, start_idx in enumerate(anchor_indices):
+        # Xác định phạm vi vùng (từ start_idx đến start_idx của vùng tiếp theo)
+        end_idx = anchor_indices[i+1] if i + 1 < len(anchor_indices) else len(df)
+        block = df.iloc[start_idx:end_idx]
+        
+        # Trích xuất thông tin
+        # Dòng 0: Mã số BHXH, Dòng 1: Mã đơn vị
+        bhxh = str(block.iloc[0, 1])
+        ma_dv = str(block.iloc[1, 1]).strip()
+        
+        # Chỉ xử lý nếu khớp mã đơn vị (hoặc nếu để trống thì lấy tất cả)
+        if not target_code or target_code.upper() in ma_dv.upper():
+            # Lấy các dòng dữ liệu (thường bắt đầu sau 2-3 dòng tiêu đề)
+            data_rows = block.iloc[2:] 
+            data_rows = data_rows[data_rows[2].notna()] # Bỏ dòng trống
             
-        df.columns = [str(c).strip() for c in df.columns]
-        meta = pd.read_excel(uploaded_file, header=None) if not uploaded_file.name.endswith('.csv') else pd.read_csv(uploaded_file, header=None)
-        bhxh_val = meta.iloc[2, 1] 
-
-        # Ô nhập từ khóa (có thể nhập nhiều, phân tách bằng dấu phẩy)
-        tu_khoa = st.text_input("Nhập Mã đơn vị (Từ khóa) - Để trống để quét toàn bộ file:")
-
-        if st.button("Quét toàn bộ dữ liệu"):
-            # Lọc dữ liệu: Nếu để trống thì lấy tất cả, nếu có từ khóa thì lọc theo mã
-            # .str.upper() giúp không phân biệt hoa thường
-            data_to_process = df.copy()
-            if tu_khoa:
-                list_tu_khoa = [k.strip().upper() for k in tu_khoa.split(',')]
-                data_to_process = data_to_process[data_to_process['Mã đơn vị'].astype(str).str.upper().isin(list_tu_khoa)]
-
-            if not data_to_process.empty:
-                # GroupBy để xử lý hàng loạt: nhặt dòng đầu và cuối của mỗi mã
-                results = []
-                for ma_dv, group in data_to_process.groupby('Mã đơn vị'):
-                    results.append({
-                        "MA_SO_BHXH": bhxh_val,
-                        "MA_DON_VI": ma_dv,
-                        "TU_THANG": format_date(group['Từ tháng'].iloc[0]),
-                        "DEN_THANG": format_date(group['Đến tháng'].iloc[-1])
-                    })
+            if not data_rows.empty:
+                # Đảm bảo định dạng YYYYMM
+                def clean_month(val):
+                    try:
+                        val = str(val).split('.')[0] # Bỏ phần thập phân nếu có
+                        m, y = val.split('/')
+                        return f"{y}{m.zfill(2)}"
+                    except: return val
                 
-                final_df = pd.DataFrame(results)
-                final_df.insert(0, 'STT', range(1, len(final_df) + 1))
-                
-                st.success(f"✅ Đã tìm thấy {len(final_df)} mã đơn vị!")
-                st.dataframe(final_df)
-                
-                # Export
-                output = io.BytesIO()
-                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                    final_df.to_excel(writer, index=False)
-                st.download_button("📥 Tải kết quả hàng loạt", output.getvalue(), "Ket_qua_hang_loat.xlsx")
-            else:
-                st.warning("Không tìm thấy dữ liệu phù hợp.")
-    except Exception as e:
-        st.error(f"Lỗi hệ thống: {e}")
+                results.append({
+                    "MA_SO_BHXH": bhxh,
+                    "MA_DON_VI": ma_dv,
+                    "TU_THANG": clean_month(data_rows.iloc[0, 2]),
+                    "DEN_THANG": clean_month(data_rows.iloc[-1, 3])
+                })
+    return pd.DataFrame(results)
+
+# Giao diện chính
+st.title("⚡ Quét dữ liệu siêu tốc")
+file = st.file_uploader("Tải file Excel:")
+code = st.text_input("Mã đơn vị (để trống để quét sạch):")
+
+if st.button("Quét ngay"):
+    if file:
+        final_df = process_data(file, code)
+        st.dataframe(final_df)
+        
+        # Xuất file nhanh
+        buf = io.BytesIO()
+        final_df.to_excel(buf, index=False)
+        st.download_button("📥 Tải file kết quả", buf.getvalue(), "Ket_qua_quet_nhanh.xlsx")

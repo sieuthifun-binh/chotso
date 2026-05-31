@@ -191,9 +191,9 @@ if 'has_run' not in st.session_state: st.session_state.has_run = False
 st.markdown("### 📥 1. Khu vực nạp dữ liệu đầu vào")
 col_f1, col_f2 = st.columns(2)
 with col_f1:
-    uploaded_file_1 = st.file_uploader("📂 Tải file dữ liệu GỐC (Dạng khối thô):", type=["xls", "xlsx", "csv"], key="file_1")
+    uploaded_file_1 = st.file_uploader("📂 Tải file dữ liệu GỐC (FILE TRA CỨU QUÁ TRÌNH THAM GIA):", type=["xls", "xlsx", "csv"], key="file_1")
 with col_f2:
-    uploaded_file_2 = st.file_uploader("📊 Tải file DỮ LIỆU MỚI đối chiếu (Dạng phẳng - Ảnh 2):", type=["xls", "xlsx", "csv"], key="file_2")
+    uploaded_file_2 = st.file_uploader("📊 Tải file DỮ LIỆU MỚI đối chiếu (FILE TRA CỨU THÔNG TIN CẤP TỜ RỜI - MỚI NHẤT):", type=["xls", "xlsx", "csv"], key="file_2")
 
 if uploaded_file_1:
     df_1_parsed = parse_file_1_block(uploaded_file_1)

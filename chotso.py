@@ -3,7 +3,7 @@ import pandas as pd
 import io
 
 st.set_page_config(page_title="Chốt Sổ Pro", layout="wide")
-st.title("🎯 Hệ thống Lọc Dữ Liệu Tự Động")
+st.title("🎯 Hệ thống Chốt Sổ tự động")
 
 uploaded_file = st.file_uploader("Tải file dữ liệu (.xls, .xlsx, .csv):", type=["xls", "xlsx", "csv"])
 

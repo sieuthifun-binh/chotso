@@ -3,9 +3,9 @@ import pandas as pd
 import io
 
 # 1. Cấu hình trang chuẩn Enterprise
-st.set_page_config(page_title="Chốt Sổ Pro v2.5", layout="wide", page_icon="🎯")
+st.set_page_config(page_title="Chốt Sổ Pro v2.6", layout="wide", page_icon="🎯")
 
-# Nhúng CSS an toàn qua st.html để tối ưu giao diện
+# Nhúng CSS an toàn qua st.html (Hàm này được Streamlit hỗ trợ chính thức, không lo bị chặn)
 st.html("""
     <style>
         .block-container { padding-top: 2rem !important; padding-bottom: 2rem !important; }
@@ -35,7 +35,6 @@ def format_date(val):
 def load_data_optimized(uploaded_file):
     try:
         if not uploaded_file.name.endswith('.csv'):
-            # Mặc định đọc Sheet đầu tiên, nếu cần có thể mở rộng sau
             return pd.read_excel(uploaded_file, header=None)
         else:
             # Tự động nhận diện dấu phân cách thông minh cho CSV
@@ -72,7 +71,7 @@ if uploaded_file:
         if submit_button:
             with st.status("🔄 Hệ thống đang xử lý dữ liệu...", expanded=True) as status:
                 
-                # [TỐI ƯU SÂU]: Ép kiểu chuỗi 1 lần duy nhất ngoài vòng lặp để giải phóng RAM/CPU
+                # Ép kiểu chuỗi 1 lần duy nhất ngoài vòng lặp để giải phóng RAM/CPU
                 df[1] = df[1].astype(str).str.strip()
                 df[2] = df[2].astype(str).str.strip()
                 
@@ -95,7 +94,7 @@ if uploaded_file:
                         bhxh_row = block[block[1].str.contains(r'^\d{9,10}$', na=False)]
                         bhxh_val = str(bhxh_row.iloc[0, 1]) if not bhxh_row.empty else str(block.iloc[0, 1])
                         
-                        # Lọc các dòng dữ liệu chi tiết (Đã được ép kiểu str từ trước nên chạy cực nhanh)
+                        # Lọc các dòng dữ liệu chi tiết
                         data_rows = block[block[2].str.contains(r'\d{1,2}/\d{4}', na=False)]
                         if data_rows.empty: 
                             continue
@@ -136,7 +135,8 @@ if uploaded_file:
                 with m1: st.metric(label="📊 Tổng số hồ sơ đã quét", value=st.session_state.total_blocks)
                 with m2: st.metric(label="✅ Kết quả tìm thấy", value=len(current_df))
                 
-                st.markdown("<br>", unsafe_with_html=True)
+                # ĐÃ THAY THẾ <br> THÀNH st.write KHÔNG DÙNG HTML
+                st.write("")
                 
                 tab_view, tab_download = st.tabs(["👀 Xem trước dữ liệu", "📥 Xuất dữ liệu & Tải về"])
                 

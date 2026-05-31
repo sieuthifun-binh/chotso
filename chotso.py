@@ -21,7 +21,7 @@ st.html("""
 st.markdown("""
     <div style="background: linear-gradient(135deg, #1E3A8A 0%, #0D1B3E 100%); padding: 25px; border-radius: 12px; color: white; margin-bottom: 25px;">
         <h1 style="margin: 0; font-size: 28px; font-weight: 700;">🎯 Hệ thống Lọc & Đối Chiếu Dữ Liệu BHXH Tự Động</h1>
-        <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">Phiên bản v3.9: Định dạng chuẩn hóa đầu ra YYYYMM (Ví dụ: 202605) cho tất cả các tệp xuất bản</p>
+        <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">Phiên bản v1.0: Định dạng chuẩn hóa đầu ra YYYYMM (Ví dụ: 202605) cho tất cả các tệp xuất bản</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -327,3 +327,4 @@ if uploaded_file_1:
                 st.warning("⚠️ Không tìm thấy kết quả nào trùng khớp với mã đơn vị yêu cầu lọc.")
     else:
         st.error("❌ Cấu trúc File 1 không đúng định dạng khối thô. Vui lòng chọn tệp tin khác.")
+st.markdown("<br><hr><p style='text-align: center; color: #475569; font-size: 20px; font-weight: bold; font-family: sans-serif;'>Copyright © Vũ Quốc Bình :)</p>", unsafe_allow_html=True)

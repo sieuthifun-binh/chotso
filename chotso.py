@@ -20,7 +20,7 @@ st.html("""
 
 st.markdown("""
     <div style="background: linear-gradient(135deg, #1E3A8A 0%, #0D1B3E 100%); padding: 25px; border-radius: 12px; color: white; margin-bottom: 25px;">
-        <h1 style="margin: 0; font-size: 28px; font-weight: 700;">🎯 Hệ thống Lọc & Đối Chiếu Dữ Liệu BHXH Tự Động</h1>
+        <h1 style="margin: 0; font-size: 28px; font-weight: 700;">🎯 Hệ thống Lọc & Đối Chiếu Dữ Liệu Tự Động</h1>
         <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">Phiên bản v1.0: Định dạng chuẩn hóa đầu ra YYYYMM (Ví dụ: 202605) cho tất cả các tệp xuất bản</p>
     </div>
 """, unsafe_allow_html=True)

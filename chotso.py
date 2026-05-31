@@ -3,7 +3,7 @@ import pandas as pd
 import io
 
 # 1. Cấu hình trang chuẩn Enterprise
-st.set_page_config(page_title="Chốt Sổ Pro v2.6", layout="wide", page_icon="🎯")
+st.set_page_config(page_title="Chốt Sổ Pro v2.7", layout="wide", page_icon="🎯")
 
 # Nhúng CSS an toàn qua st.html (Hàm này được Streamlit hỗ trợ chính thức, không lo bị chặn)
 st.html("""
@@ -15,7 +15,7 @@ st.html("""
 """)
 
 st.title("🎯 Hệ thống Lọc Dữ Liệu Tự Động Pro")
-st.subheader("Phiên bản tối ưu hóa hiệu năng cao cho môi trường đa người dùng")
+st.subheader("Phiên bản tối ưu hóa hiệu năng Ver 1.0 ")
 st.markdown("---")
 
 def format_date(val):
@@ -125,7 +125,7 @@ if uploaded_file:
                     st.session_state.total_blocks = len(anchor_indices) - 1
                     status.update(label="✅ Xử lý hoàn tất!", state="complete")
 
-        # --- HIỂN THỊ KẾT QUẢ ĐỘC LẬP TỪ STATE ---
+        # --- HIỂN THỊ KẾT QUẢ PHẲNG (KHÔNG DÙNG TAB) ---
         if st.session_state.final_df_results is not None:
             if isinstance(st.session_state.final_df_results, pd.DataFrame):
                 current_df = st.session_state.final_df_results
@@ -135,31 +135,34 @@ if uploaded_file:
                 with m1: st.metric(label="📊 Tổng số hồ sơ đã quét", value=st.session_state.total_blocks)
                 with m2: st.metric(label="✅ Kết quả tìm thấy", value=len(current_df))
                 
-                # ĐÃ THAY THẾ <br> THÀNH st.write KHÔNG DÙNG HTML
                 st.write("")
                 
-                tab_view, tab_download = st.tabs(["👀 Xem trước dữ liệu", "📥 Xuất dữ liệu & Tải về"])
+                # 1. Hiển thị bảng xem trước dữ liệu lên trước
+                st.markdown("### 👀 Xem trước dữ liệu kết quả:")
+                st.dataframe(current_df, use_container_width=True, hide_index=True)
                 
-                with tab_view:
-                    st.dataframe(current_df, use_container_width=True, hide_index=True)
+                st.write("")
                 
-                with tab_download:
-                    st.info("File xuất ra đã được hệ thống tự động tối ưu hóa định dạng độ rộng cột (Auto-fit width).")
-                    
-                    output = io.BytesIO()
-                    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                        current_df.to_excel(writer, index=False, sheet_name="Ket_Qua_Chot_So")
-                        worksheet = writer.sheets['Ket_Qua_Chot_So']
-                        for idx, col in enumerate(current_df.columns):
-                            max_len = max(current_df[col].astype(str).map(len).max(), len(col)) + 4
-                            worksheet.set_column(idx, idx, max_len)
-                            
-                    st.download_button(
-                        label="📥 Tải file kết quả .xlsx", 
-                        data=output.getvalue(), 
-                        file_name="Ket_qua_chot_so_FINAL.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    )
+                # 2. Đưa nút tải file Excel xuống ngay dưới mục hiển thị kết quả
+                st.markdown("### 📥 Xuất bản file kết quả:")
+                
+                # Tạo file Excel bằng XlsxWriter trong bộ nhớ ẩn
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                    current_df.to_excel(writer, index=False, sheet_name="Ket_Qua_Chot_So")
+                    worksheet = writer.sheets['Ket_Qua_Chot_So']
+                    # Tự động căn rộng cột
+                    for idx, col in enumerate(current_df.columns):
+                        max_len = max(current_df[col].astype(str).map(len).max(), len(col)) + 4
+                        worksheet.set_column(idx, idx, max_len)
+                
+                st.download_button(
+                    label="📥 BẤM VÀO ĐÂY ĐỂ TẢI FILE EXCEL KẾT QUẢ (.XLSX)", 
+                    data=output.getvalue(), 
+                    file_name="Ket_qua_chot_so_FINAL.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+                
             elif st.session_state.final_df_results == "EMPTY":
                 st.warning("⚠️ Không tìm thấy mã đơn vị tương ứng trong tệp dữ liệu.")
     else:

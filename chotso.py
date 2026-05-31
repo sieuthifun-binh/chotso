@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Sử dụng st.html để nhúng CSS an toàn, sửa lỗi TypeError trên Python đời mới
+# Sử dụng st.html để nhúng CSS an toàn (Hàm này được Streamlit cho phép chính thức)
 st.html("""
     <style>
         .block-container { padding-top: 2rem !important; padding-bottom: 2rem !important; }
@@ -45,9 +45,9 @@ with st.sidebar:
 # =========================================================================
 # 3. MÀN HÌNH CHÍNH (MAIN CONTENT)
 # =========================================================================
-# Tiêu đề chính dạng Banner
-st.markdown("<h1 style='text-align: center; color: #0D47A1;'>🎯 HỆ THỐNG XỬ LÝ & LỌC DỮ LIỆU BHXH TỰ ĐỘNG</h1>", unsafe_with_html=True)
-st.markdown("<p style='text-align: center; color: #555;'>Giải pháp tối ưu hóa dữ liệu chốt sổ - Tốc độ cao, chính xác tuyệt đối</p>", unsafe_with_html=True)
+# Đã thay thế st.markdown HTML bằng hàm bản địa của Streamlit để chống lỗi bảo mật
+st.title("🎯 HỆ THỐNG XỬ LÝ & LỌC DỮ LIỆU BHXH TỰ ĐỘNG")
+st.subheader("Giải pháp tối ưu hóa dữ liệu chốt sổ - Tốc độ cao, chính xác tuyệt đối")
 st.markdown("---")
 
 # Hàm bổ trợ chuyển đổi ngày tháng
@@ -117,7 +117,7 @@ if uploaded_file:
                         for ma_dv, group in data_rows.groupby(1):
                             ma_dv_str = str(ma_dv).strip()
                             if not tu_khoa or tu_khoa.upper() in ma_dv_str.upper():
-                                # Phòng thủ lỗi nghiêm túc bằng cách kiểm tra số lượng dòng thực tế
+                                # Phòng thủ lỗi bằng cách kiểm tra số lượng dòng thực tế
                                 tu_thang_raw = group[2].iloc[0] if len(group) > 0 else ""
                                 den_thang_raw = group[3].iloc[-1] if len(group) > 0 else ""
                                 

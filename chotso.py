@@ -167,3 +167,4 @@ if uploaded_file:
                 st.warning("⚠️ Không tìm thấy mã đơn vị tương ứng trong tệp dữ liệu.")
     else:
         st.error("❌ Cấu trúc file không hợp lệ hoặc file trống. Vui lòng kiểm tra lại file đầu vào!")
+st.markdown("<br><hr><p style='text-align: center; color: #475569; font-size: 20px; font-weight: bold; font-family: sans-serif;'>Copyright © Vũ Quốc Bình - BHXH CS An Dương</p>", unsafe_allow_html=True)

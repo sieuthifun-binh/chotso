@@ -12,23 +12,21 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Thay đổi giao diện bằng CSS tùy chỉnh để trông hiện đại hơn
-st.markdown("""
+# Sử dụng st.html để nhúng CSS an toàn, sửa lỗi TypeError trên Python đời mới
+st.html("""
     <style>
-        .block-container { padding-top: 2rem; padding-bottom: 2rem; }
+        .block-container { padding-top: 2rem !important; padding-bottom: 2rem !important; }
         .stButton>button { width: 100%; border-radius: 8px; height: 3em; font-weight: bold; }
-        .css-1kyx603 { font-size: 14px; }
         div[data-testid="stMetricValue"] { font-size: 28px; color: #1E88E5; }
     </style>
-""", unsafe_with_html=True)
+""")
 
 # =========================================================================
 # 2. THANH SIDEBAR (BẢNG ĐIỀU KHIỂN TRÁI)
 # =========================================================================
 with st.sidebar:
-    st.image("https://img.icons8.com/fluent/96/000000/data-configuration.png", width=80)
-    st.title("BẢNG ĐIỀU KHIỂN")
-    st.subheader("⚙️ Cấu hình bộ lọc")
+    st.markdown("## ⚙️ BẢNG ĐIỀU KHIỂN")
+    st.subheader("Cấu hình bộ lọc")
     
     # Gom bộ lọc vào Sidebar để màn hình chính gọn gàng hơn
     tu_khoa = st.text_input(
@@ -39,10 +37,10 @@ with st.sidebar:
     
     st.markdown("---")
     st.markdown("### 📘 Hướng dẫn nhanh:")
-    st.caption("1. Tải file xuất từ hệ thống TST (.xlsx, .csv).")
-    st.caption("2. Nhập mã đơn vị (nếu cần lọc cụ thể).")
-    st.caption("3. Bấm 'Chạy phân tích' và tải file kết quả.")
-    st.info("💡 Mẹo: Hệ thống tự động nhận diện cấu hình Dòng cha (Mã BHXH) và Dòng con (Chi tiết).")
+    st.caption("1. Tải file xuất từ hệ thống TST (.xlsx, .xls, .csv).")
+    st.caption("2. Nhập mã đơn vị ở ô phía trên (nếu cần lọc cụ thể).")
+    st.caption("3. Bấm 'BẮT ĐẦU PHÂN TÍCH' và tải file kết quả.")
+    st.info("💡 Hệ thống tự động nhận diện cấu hình Dòng cha (Mã BHXH) và Dòng con (Chi tiết).")
 
 # =========================================================================
 # 3. MÀN HÌNH CHÍNH (MAIN CONTENT)
@@ -83,7 +81,7 @@ if uploaded_file:
     df = load_and_parse_data(file_bytes, uploaded_file.name)
     
     if df is not None and not df.empty:
-        # Khởi tạo Session State để lưu kết quả
+        # Khởi tạo Session State để giữ trạng thái dữ liệu khi bấm nút hoặc tương tác
         if 'processed_data' not in st.session_state:
             st.session_state.processed_data = None
         if 'total_blocks' not in st.session_state:
@@ -102,7 +100,7 @@ if uploaded_file:
                 
                 if not anchor_indices:
                     status.update(label="❌ Thất bại: Không tìm thấy dữ liệu hợp lệ!", state="error")
-                    st.error("Không tìm thấy cột chứa 'Mã số BHXH' (9-10 chữ số). Vui lòng kiểm tra lại cấu trình file.")
+                    st.error("Không tìm thấy cột chứa 'Mã số BHXH' (định dạng 9-10 chữ số liền nhau). Vui lòng kiểm tra lại cấu trúc file mẫu.")
                 else:
                     anchor_indices.append(len(df))
                     final_results = []
@@ -112,12 +110,14 @@ if uploaded_file:
                         block = df.iloc[start:end]
                         bhxh_val = block.iloc[0, 1] 
                         
+                        # Lọc các dòng con chứa dữ liệu thời gian (định dạng tháng/năm) ở cột số 2
                         data_rows = block[block[2].astype(str).str.contains(r'\d{1,2}/\d{4}', na=False)].copy()
                         if data_rows.empty: continue
                             
                         for ma_dv, group in data_rows.groupby(1):
                             ma_dv_str = str(ma_dv).strip()
                             if not tu_khoa or tu_khoa.upper() in ma_dv_str.upper():
+                                # Phòng thủ lỗi nghiêm túc bằng cách kiểm tra số lượng dòng thực tế
                                 tu_thang_raw = group[2].iloc[0] if len(group) > 0 else ""
                                 den_thang_raw = group[3].iloc[-1] if len(group) > 0 else ""
                                 
@@ -133,7 +133,7 @@ if uploaded_file:
                     status.update(label="✅ Xử lý hoàn tất!", state="complete")
 
         # =========================================================================
-        # 4. KHU VỰC HIỂN THỊ KẾT QUẢ NÂNG CAO (Sau khi đã phân tích)
+        # 4. KHU VỰC HIỂN THỊ KẾT QUẢ NÂNG CAO (Giữ trạng thái nhờ Session State)
         # =========================================================================
         if st.session_state.processed_data is not None:
             st.markdown("### 📊 Kết quả phân tích")
@@ -142,7 +142,7 @@ if uploaded_file:
                 res_df = pd.DataFrame(st.session_state.processed_data)
                 res_df.insert(0, 'STT', range(1, len(res_df) + 1))
                 
-                # Widget số liệu (Metrics) trông rất ra dáng Dashboard cao cấp
+                # Widget số liệu (Metrics) hiển thị tổng quan dữ liệu
                 m1, m2, m3 = st.columns(3)
                 with m1:
                     st.metric(label="Tổng số hồ sơ (Khối) đã quét", value=st.session_state.total_blocks)
@@ -153,7 +153,7 @@ if uploaded_file:
                 
                 st.markdown("<br>", unsafe_with_html=True)
                 
-                # Chia Tabs để phân biệt giữa việc "Xem dữ liệu" và "Tải tệp"
+                # Chia Tabs tách biệt giữa việc Xem dữ liệu và Tải tệp xuống
                 tab_view, tab_download = st.tabs(["👀 Xem trước dữ liệu", "📥 Xuất dữ liệu & Tải về"])
                 
                 with tab_view:
@@ -163,11 +163,13 @@ if uploaded_file:
                 with tab_download:
                     st.info("File xuất ra đã được hệ thống tự động tối ưu hóa định dạng độ rộng cột (Auto-fit width).")
                     
-                    # Tạo file Excel
+                    # Tạo file Excel trong bộ nhớ bằng XlsxWriter
                     output = io.BytesIO()
                     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                         res_df.to_excel(writer, index=False, sheet_name="Ket_Qua_Chot_So")
                         worksheet = writer.sheets['Ket_Qua_Chot_So']
+                        
+                        # Tự động căn lề độ rộng cột dựa trên dữ liệu dài nhất
                         for idx, col in enumerate(res_df.columns):
                             max_len = max(res_df[col].astype(str).map(len).max(), len(col)) + 4
                             worksheet.set_column(idx, idx, max_len)
@@ -182,4 +184,4 @@ if uploaded_file:
             else:
                 st.warning("⚠️ Hệ thống đã quét hết file nhưng không tìm thấy mã đơn vị nào trùng khớp với từ khóa của bạn.")
     else:
-        st.error("❌ Tệp lỗi: Tệp tải lên trống hoặc bị sai định dạng cấu trúc DataFrame.")
+        st.error("❌ Tệp lỗi: Tệp tải lên trống hoặc bị sai cấu trúc bảng dữ liệu.")
